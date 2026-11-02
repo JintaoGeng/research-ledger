@@ -518,7 +518,7 @@ async function loadData() {
     const path = cfg.path || 'data.json';
     const data = await ghGet(`/repos/${cfg.owner}/${cfg.repo}/contents/${path}?ref=${branch}`);
     currentSha = data.sha;
-    records = JSON.parse(atob(data.content));
+    records = JSON.parse(decodeURIComponent(escape(atob(data.content))));
     setStatus('synced', '已同步 · ' + new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}));
   } catch (e) {
     if (String(e.message).includes('404')) {
