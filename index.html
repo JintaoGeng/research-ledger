@@ -309,7 +309,7 @@
   </div>
 
   <div class="filter-bar">
-    <input type="text" id="searchInput" placeholder="搜索项目名称或备注…" oninput="render()">
+    <input type="text" id="searchInput" placeholder="搜索项目名称或备注…" oninput="render()" autocomplete="off" name="ledger-search">
     <select id="filterDept" onchange="render()">
       <option value="">全部部门</option>
     </select>
@@ -411,23 +411,23 @@
     <div class="form-grid">
       <div class="form-field">
         <label>GitHub 用户名</label>
-        <input type="text" id="cfgOwner" placeholder="例如：yourname">
+        <input type="text" id="cfgOwner" placeholder="例如：yourname" autocomplete="off" name="github-owner">
       </div>
       <div class="form-field">
         <label>仓库名</label>
-        <input type="text" id="cfgRepo" placeholder="例如：research-ledger">
+        <input type="text" id="cfgRepo" placeholder="例如：research-ledger" autocomplete="off" name="github-repo">
       </div>
       <div class="form-field">
         <label>分支</label>
-        <input type="text" id="cfgBranch" placeholder="main">
+        <input type="text" id="cfgBranch" placeholder="main" autocomplete="off" name="github-branch">
       </div>
       <div class="form-field">
         <label>数据文件路径</label>
-        <input type="text" id="cfgPath" placeholder="data.json">
+        <input type="text" id="cfgPath" placeholder="data.json" autocomplete="off" name="github-path">
       </div>
       <div class="form-field full">
         <label>Personal Access Token (PAT)</label>
-        <input type="password" id="cfgToken" placeholder="ghp_xxxxxxxxxxxx">
+        <input type="password" id="cfgToken" placeholder="ghp_xxxxxxxxxxxx" autocomplete="off" name="github-token">
       </div>
     </div>
     <div class="hint">
