@@ -309,7 +309,7 @@
   </div>
 
   <div class="filter-bar">
-    <input type="text" id="searchInput" placeholder="搜索项目名称或备注…" oninput="render()" autocomplete="off" name="ledger-search">
+    <input type="text" id="searchInput" placeholder="搜索项目名称或备注…" oninput="render()" autocomplete="new-password" name="ledger-search-2026">
     <select id="filterDept" onchange="render()">
       <option value="">全部部门</option>
     </select>
@@ -530,6 +530,11 @@ async function loadData() {
       showToast('加载失败：' + e.message, 'error');
     }
   }
+  // 清除浏览器自动填充带来的残留值，避免误筛选
+  document.getElementById('searchInput').value = '';
+  document.getElementById('filterDept').value = '';
+  document.getElementById('filterRole').value = '';
+  document.getElementById('filterStatus').value = '';
   render();
 }
 async function persistData() {
@@ -745,6 +750,13 @@ document.querySelectorAll('.modal-mask').forEach(m => {
 
 // 启动
 loadData();
+// Chrome 自动填充发生在 JS 执行之后，页面完全加载后再清一次
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const si = document.getElementById('searchInput');
+    if (si.value) { si.value = ''; render(); }
+  }, 400);
+});
 </script>
 </body>
 </html>
