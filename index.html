@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>科研项目台账</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%231e3a8a'%3E%3Cpath d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/%3E%3Cpolyline points='14 2 14 8 20 8' fill='none' stroke='%23fff' stroke-width='2'/%3E%3Cline x1='8' y1='13' x2='16' y2='13' stroke='%23fff' stroke-width='1.5'/%3E%3Cline x1='8' y1='17' x2='13' y2='17' stroke='%23fff' stroke-width='1.5'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --primary: #1e3a8a;
+    --primary-light: #3b82f6;
+    --bg: #f1f5f9;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-2: #64748b;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --info: #0891b2;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  /* ===== 顶部栏 ===== */
+  .topbar {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 16px; }
+  .topbar h1 { font-size: 18px; font-weight: 600; }
+  .sync-status {
+    font-size: 12px;
+    color: var(--text-2);
+    display: flex; align-items: center; gap: 6px;
+    padding: 4px 10px;
+    background: var(--bg);
+    border-radius: 12px;
+  }
+  .sync-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #94a3b8;
+  }
+  .sync-status.loading .sync-dot { background: var(--warning); animation: pulse 1s infinite; }
+  .sync-status.synced .sync-dot { background: var(--success); }
+  .sync-status.error .sync-dot { background: var(--danger); }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .topbar-right { display: flex; gap: 8px; }
+  .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn:hover { background: var(--bg); }
+  .btn-primary {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  .btn-primary:hover { background: #1e40af; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-danger { color: var(--danger); border-color: var(--danger); }
+  .btn-danger:hover { background: #fef2f2; }
+
+  /* ===== 主容器 ===== */
+  .container { max-width: 1200px; margin: 0 auto; padding: 20px 24px; }
+
+  /* ===== 统计卡片 ===== */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .stat-card .num { font-size: 28px; font-weight: 700; line-height: 1.2; }
+  .stat-card .label { font-size: 12px; color: var(--text-2); margin-top: 4px; }
+  .stat-card.host .num { color: var(--primary); }
+  .stat-card.participate .num { color: var(--info); }
+  .stat-card.active .num { color: var(--success); }
+
+  /* ===== 筛选栏 ===== */
+  .filter-bar {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-bar input[type="text"],
+  .filter-bar select {
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    background: #fff;
+    min-width: 130px;
+  }
+  .filter-bar input[type="text"] { flex: 1; min-width: 200px; }
+  .filter-bar input:focus, .filter-bar select:focus {
+    outline: none; border-color: var(--primary-light);
+    box-shadow: 0 0 0 2px rgba(59,130,246,.15);
+  }
+
+  /* ===== 表格 ===== */
+  .table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  thead { background: #f8fafc; }
+  th {
+    text-align: left;
+    padding: 11px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  th:hover { color: var(--text); }
+  th .arrow { font-size: 10px; margin-left: 4px; }
+  td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    word-break: break-word;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+  .col-name { width: 22%; }
+  .col-dept { width: 12%; }
+  .col-role { width: 9%; }
+  .col-order { width: 8%; text-align: center; }
+  .col-time { width: 16%; }
+  .col-status { width: 10%; }
+  .col-notes { width: 15%; }
+  .col-actions { width: 8%; text-align: right; }
+
+  /* ===== 标签 ===== */
+  .tag {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .tag-host { background: #dbeafe; color: #1e40af; }
+  .tag-participate { background: #cffafe; color: #0e7490; }
+  .tag-active { background: #d1fae5; color: #065f46; }
+  .tag-done { background: #e2e8f0; color: #475569; }
+  .tag-apply { background: #fef3c7; color: #92400e; }
+  .tag-stop { background: #fee2e2; color: #991b1b; }
+
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--text-2);
+  }
+  .empty-state .big { font-size: 16px; margin-bottom: 6px; color: var(--text); }
+
+  /* ===== 模态框 ===== */
+  .modal-mask {
+    position: fixed; inset: 0;
+    background: rgba(15,23,42,.5);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 40px 20px;
+    z-index: 200;
+    overflow-y: auto;
+  }
+  .modal-mask.show { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 560px;
+    padding: 24px;
+  }
+  .modal h2 { font-size: 18px; margin-bottom: 18px; }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .form-field { display: flex; flex-direction: column; gap: 5px; }
+  .form-field.full { grid-column: 1 / -1; }
+  .form-field label {
+    font-size: 12px;
+    color: var(--text-2);
+    font-weight: 500;
+  }
+  .form-field input,
+  .form-field select,
+  .form-field textarea {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .form-field textarea { resize: vertical; min-height: 60px; }
+  .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
+    outline: none; border-color: var(--primary-light);
+    box-shadow: 0 0 0 2px rgba(59,130,246,.15);
+  }
+  .modal-actions {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+  .hint {
+    font-size: 12px;
+    color: var(--text-2);
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+  .hint a { color: var(--primary-light); }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--text);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all .25s;
+    z-index: 300;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--danger); }
+  .toast.success { background: var(--success); }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 768px) {
+    .topbar { padding: 12px 16px; }
+    .container { padding: 14px 12px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .form-grid { grid-template-columns: 1fr; }
+    .table-wrap { overflow-x: auto; }
+    table { min-width: 800px; }
+    .topbar h1 { font-size: 16px; }
+    .form-field input, .form-field select, .form-field textarea,
+    .filter-bar input, .filter-bar select,
+    input[type="text"], input[type="password"], input[type="number"], textarea { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <h1>科研项目台账</h1>
+    <div class="sync-status" id="syncStatus">
+      <span class="sync-dot"></span>
+      <span id="syncText">未配置</span>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="btn" onclick="openSettings()">设置</button>
+    <button class="btn btn-primary" onclick="openForm()">+ 新增项目</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="num" id="statTotal">0</div><div class="label">项目总数</div></div>
+    <div class="stat-card host"><div class="num" id="statHost">0</div><div class="label">主持</div></div>
+    <div class="stat-card participate"><div class="num" id="statPart">0</div><div class="label">参与</div></div>
+    <div class="stat-card active"><div class="num" id="statActive">0</div><div class="label">在研</div></div>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="搜索项目名称或备注…" oninput="render()">
+    <select id="filterDept" onchange="render()">
+      <option value="">全部部门</option>
+    </select>
+    <select id="filterRole" onchange="render()">
+      <option value="">全部角色</option>
+      <option value="主持">主持</option>
+      <option value="参与">参与</option>
+    </select>
+    <select id="filterStatus" onchange="render()">
+      <option value="">全部状态</option>
+      <option value="申报中">申报中</option>
+      <option value="在研">在研</option>
+      <option value="已结题">已结题</option>
+      <option value="已中止">已中止</option>
+    </select>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="col-name" onclick="setSort('name')">项目名称 <span class="arrow" id="arrow-name"></span></th>
+          <th class="col-dept" onclick="setSort('department')">部门 <span class="arrow" id="arrow-department"></span></th>
+          <th class="col-role" onclick="setSort('role')">角色 <span class="arrow" id="arrow-role"></span></th>
+          <th class="col-order" onclick="setSort('order')">顺序</th>
+          <th class="col-time" onclick="setSort('startDate')">起止时间 <span class="arrow" id="arrow-startDate"></span></th>
+          <th class="col-status" onclick="setSort('status')">状态 <span class="arrow" id="arrow-status"></span></th>
+          <th class="col-notes">备注</th>
+          <th class="col-actions"></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+    <div class="empty-state" id="emptyState" style="display:none">
+      <div class="big">暂无项目记录</div>
+      <div>点击右上角「+ 新增项目」录入第一条</div>
+    </div>
+  </div>
+</div>
+
+<!-- 新增/编辑模态框 -->
+<div class="modal-mask" id="formModal">
+  <div class="modal">
+    <h2 id="formTitle">新增项目</h2>
+    <div class="form-grid">
+      <div class="form-field full">
+        <label>项目名称 *</label>
+        <input type="text" id="fName" placeholder="例如：河南省教育科学规划课题">
+      </div>
+      <div class="form-field">
+        <label>所属部门</label>
+        <input type="text" id="fDept" list="deptList" placeholder="如：机电工程学院">
+        <datalist id="deptList"></datalist>
+      </div>
+      <div class="form-field">
+        <label>我的角色</label>
+        <select id="fRole">
+          <option value="主持">主持</option>
+          <option value="参与">参与</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>参与顺序</label>
+        <input type="number" id="fOrder" min="1" max="20" value="1">
+      </div>
+      <div class="form-field">
+        <label>项目状态</label>
+        <select id="fStatus">
+          <option value="申报中">申报中</option>
+          <option value="在研" selected>在研</option>
+          <option value="已结题">已结题</option>
+          <option value="已中止">已中止</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label>开始时间</label>
+        <input type="month" id="fStart">
+      </div>
+      <div class="form-field">
+        <label>结束时间</label>
+        <input type="month" id="fEnd">
+      </div>
+      <div class="form-field full">
+        <label>备注</label>
+        <textarea id="fNotes" placeholder="立项编号、经费、排名等补充信息"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeForm()">取消</button>
+      <button class="btn btn-primary" onclick="saveRecord()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 设置模态框 -->
+<div class="modal-mask" id="settingsModal">
+  <div class="modal">
+    <h2>GitHub 同步设置</h2>
+    <div class="form-grid">
+      <div class="form-field">
+        <label>GitHub 用户名</label>
+        <input type="text" id="cfgOwner" placeholder="例如：yourname">
+      </div>
+      <div class="form-field">
+        <label>仓库名</label>
+        <input type="text" id="cfgRepo" placeholder="例如：research-ledger">
+      </div>
+      <div class="form-field">
+        <label>分支</label>
+        <input type="text" id="cfgBranch" placeholder="main">
+      </div>
+      <div class="form-field">
+        <label>数据文件路径</label>
+        <input type="text" id="cfgPath" placeholder="data.json">
+      </div>
+      <div class="form-field full">
+        <label>Personal Access Token (PAT)</label>
+        <input type="password" id="cfgToken" placeholder="ghp_xxxxxxxxxxxx">
+      </div>
+    </div>
+    <div class="hint">
+      首次使用请：<br>
+      1. 在 GitHub 新建一个仓库（可设为 Private），例如 <code>research-ledger</code>；<br>
+      2. 到 <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a> 生成一个 Token，勾选 <code>repo</code> 权限；<br>
+      3. 填写上方四项并保存。数据将保存在仓库的 <code>data.json</code> 中，任何设备配置一次即可同步。<br>
+      启用 GitHub Pages（Settings → Pages → 选 main 分支）后，即可通过网页在各设备访问。
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeSettings()">取消</button>
+      <button class="btn btn-primary" onclick="saveSettings()">保存并测试</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ 状态 ============
+let records = [];
+let currentSha = null;
+let editingId = null;
+let sortKey = 'startDate';
+let sortDir = -1; // -1 desc, 1 asc
+
+const STORAGE_KEY = 'research-ledger-config';
+
+// ============ 工具 ============
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function setStatus(kind, text) {
+  const el = document.getElementById('syncStatus');
+  el.className = 'sync-status ' + kind;
+  document.getElementById('syncText').textContent = text;
+}
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function getConfig() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+
+// ============ GitHub API ============
+async function ghGet(path) {
+  const cfg = getConfig();
+  const r = await fetch('https://api.github.com' + path, {
+    headers: { 'Authorization': 'token ' + cfg.token, 'Accept': 'application/vnd.github+json' }
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status + ' ' + r.statusText);
+  return r.json();
+}
+async function ghPut(path, body) {
+  const cfg = getConfig();
+  const r = await fetch('https://api.github.com' + path, {
+    method: 'PUT',
+    headers: {
+      'Authorization': 'token ' + cfg.token,
+      'Accept': 'application/vnd.github+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error('HTTP ' + r.status + ': ' + t.slice(0, 200));
+  }
+  return r.json();
+}
+async function loadData() {
+  const cfg = getConfig();
+  if (!cfg.owner || !cfg.repo || !cfg.token) {
+    setStatus('', '未配置');
+    return;
+  }
+  setStatus('loading', '同步中…');
+  try {
+    const branch = cfg.branch || 'main';
+    const path = cfg.path || 'data.json';
+    const data = await ghGet(`/repos/${cfg.owner}/${cfg.repo}/contents/${path}?ref=${branch}`);
+    currentSha = data.sha;
+    records = JSON.parse(atob(data.content));
+    setStatus('synced', '已同步 · ' + new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}));
+  } catch (e) {
+    if (String(e.message).includes('404')) {
+      // 文件不存在，初始化空数组
+      records = [];
+      setStatus('synced', '新台账 · 待写入');
+    } else {
+      setStatus('error', '同步失败');
+      showToast('加载失败：' + e.message, 'error');
+    }
+  }
+  render();
+}
+async function persistData() {
+  const cfg = getConfig();
+  if (!cfg.owner || !cfg.repo || !cfg.token) {
+    showToast('请先在设置中配置 GitHub', 'error');
+    return false;
+  }
+  setStatus('loading', '保存中…');
+  try {
+    const branch = cfg.branch || 'main';
+    const path = cfg.path || 'data.json';
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(records, null, 2))));
+    const body = {
+      message: 'update ledger ' + new Date().toISOString(),
+      content: content,
+      branch: branch
+    };
+    if (currentSha) body.sha = currentSha;
+    const res = await ghPut(`/repos/${cfg.owner}/${cfg.repo}/contents/${path}`, body);
+    currentSha = res.content.sha;
+    setStatus('synced', '已保存 · ' + new Date().toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'}));
+    return true;
+  } catch (e) {
+    setStatus('error', '保存失败');
+    showToast('保存失败：' + e.message, 'error');
+    return false;
+  }
+}
+
+// ============ 渲染 ============
+function setSort(key) {
+  if (sortKey === key) sortDir = -sortDir;
+  else { sortKey = key; sortDir = -1; }
+  render();
+}
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const dept = document.getElementById('filterDept').value;
+  const role = document.getElementById('filterRole').value;
+  const st = document.getElementById('filterStatus').value;
+  let list = records.filter(r => {
+    if (dept && r.department !== dept) return false;
+    if (role && r.role !== role) return false;
+    if (st && r.status !== st) return false;
+    if (q) {
+      const blob = (r.name + ' ' + (r.notes||'')).toLowerCase();
+      if (!blob.includes(q)) return false;
+    }
+    return true;
+  });
+  list.sort((a, b) => {
+    let va = a[sortKey] || '', vb = b[sortKey] || '';
+    if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * sortDir;
+    return String(va).localeCompare(String(vb), 'zh-CN') * sortDir;
+  });
+  return list;
+}
+function statusTag(s) {
+  const map = { '在研':'tag-active', '已结题':'tag-done', '申报中':'tag-apply', '已中止':'tag-stop' };
+  return `<span class="tag ${map[s]||'tag-done'}">${esc(s)}</span>`;
+}
+function roleTag(r) {
+  return r === '主持'
+    ? '<span class="tag tag-host">主持</span>'
+    : '<span class="tag tag-participate">参与</span>';
+}
+function render() {
+  // 统计
+  document.getElementById('statTotal').textContent = records.length;
+  document.getElementById('statHost').textContent = records.filter(r => r.role === '主持').length;
+  document.getElementById('statPart').textContent = records.filter(r => r.role === '参与').length;
+  document.getElementById('statActive').textContent = records.filter(r => r.status === '在研').length;
+
+  // 部门下拉
+  const depts = [...new Set(records.map(r => r.department).filter(Boolean))].sort();
+  const sel = document.getElementById('filterDept');
+  const curDept = sel.value;
+  sel.innerHTML = '<option value="">全部部门</option>' +
+    depts.map(d => `<option value="${esc(d)}" ${d===curDept?'selected':''}>${esc(d)}</option>`).join('');
+
+  // 部门 datalist
+  document.getElementById('deptList').innerHTML =
+    depts.map(d => `<option value="${esc(d)}">`).join('');
+
+  // 箭头
+  ['name','department','role','startDate','status'].forEach(k => {
+    document.getElementById('arrow-' + k).textContent = sortKey === k ? (sortDir === -1 ? '▼' : '▲') : '';
+  });
+
+  // 表格
+  const list = getFiltered();
+  const tb = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+  if (list.length === 0) {
+    tb.innerHTML = '';
+    empty.style.display = 'block';
+    empty.querySelector('.big').textContent = records.length === 0 ? '暂无项目记录' : '没有匹配的记录';
+    empty.lastElementChild.textContent = records.length === 0
+      ? '点击右上角「+ 新增项目」录入第一条'
+      : '调整筛选条件试试';
+    return;
+  }
+  empty.style.display = 'none';
+  tb.innerHTML = list.map(r => `
+    <tr>
+      <td>${esc(r.name)}</td>
+      <td>${esc(r.department)||'—'}</td>
+      <td>${roleTag(r.role)}</td>
+      <td style="text-align:center">${r.order || '—'}</td>
+      <td>${esc(r.startDate)||'—'} ~ ${esc(r.endDate)||'至今'}</td>
+      <td>${statusTag(r.status)}</td>
+      <td>${esc(r.notes)||'—'}</td>
+      <td style="text-align:right; white-space:nowrap">
+        <button class="btn btn-sm" onclick="openForm('${r.id}')">编辑</button>
+        <button class="btn btn-sm btn-danger" onclick="delRecord('${r.id}')">删</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ============ 表单 ============
+function openForm(id) {
+  editingId = id || null;
+  document.getElementById('formTitle').textContent = id ? '编辑项目' : '新增项目';
+  if (id) {
+    const r = records.find(x => x.id === id);
+    document.getElementById('fName').value = r.name || '';
+    document.getElementById('fDept').value = r.department || '';
+    document.getElementById('fRole').value = r.role || '参与';
+    document.getElementById('fOrder').value = r.order || 1;
+    document.getElementById('fStatus').value = r.status || '在研';
+    document.getElementById('fStart').value = r.startDate || '';
+    document.getElementById('fEnd').value = r.endDate || '';
+    document.getElementById('fNotes').value = r.notes || '';
+  } else {
+    document.getElementById('fName').value = '';
+    document.getElementById('fDept').value = '';
+    document.getElementById('fRole').value = '参与';
+    document.getElementById('fOrder').value = records.filter(r=>r.role==='主持').length>0?1:1;
+    document.getElementById('fStatus').value = '在研';
+    document.getElementById('fStart').value = '';
+    document.getElementById('fEnd').value = '';
+    document.getElementById('fNotes').value = '';
+  }
+  document.getElementById('formModal').classList.add('show');
+}
+function closeForm() { document.getElementById('formModal').classList.remove('show'); }
+
+async function saveRecord() {
+  const name = document.getElementById('fName').value.trim();
+  if (!name) { showToast('请填写项目名称', 'error'); return; }
+  const rec = {
+    name: name,
+    department: document.getElementById('fDept').value.trim(),
+    role: document.getElementById('fRole').value,
+    order: parseInt(document.getElementById('fOrder').value) || 1,
+    status: document.getElementById('fStatus').value,
+    startDate: document.getElementById('fStart').value,
+    endDate: document.getElementById('fEnd').value,
+    notes: document.getElementById('fNotes').value.trim()
+  };
+  if (editingId) {
+    const idx = records.findIndex(x => x.id === editingId);
+    records[idx] = { ...records[idx], ...rec };
+  } else {
+    rec.id = uid();
+    records.unshift(rec);
+  }
+  const ok = await persistData();
+  if (ok) {
+    closeForm();
+    render();
+    showToast(editingId ? '已更新' : '已添加', 'success');
+  }
+}
+async function delRecord(id) {
+  if (!confirm('确定删除这条记录？')) return;
+  records = records.filter(r => r.id !== id);
+  const ok = await persistData();
+  if (ok) { render(); showToast('已删除', 'success'); }
+}
+
+// ============ 设置 ============
+function openSettings() {
+  const cfg = getConfig();
+  document.getElementById('cfgOwner').value = cfg.owner || '';
+  document.getElementById('cfgRepo').value = cfg.repo || '';
+  document.getElementById('cfgBranch').value = cfg.branch || 'main';
+  document.getElementById('cfgPath').value = cfg.path || 'data.json';
+  document.getElementById('cfgToken').value = cfg.token || '';
+  document.getElementById('settingsModal').classList.add('show');
+}
+function closeSettings() { document.getElementById('settingsModal').classList.remove('show'); }
+async function saveSettings() {
+  const cfg = {
+    owner: document.getElementById('cfgOwner').value.trim(),
+    repo: document.getElementById('cfgRepo').value.trim(),
+    branch: document.getElementById('cfgBranch').value.trim() || 'main',
+    path: document.getElementById('cfgPath').value.trim() || 'data.json',
+    token: document.getElementById('cfgToken').value.trim()
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+  closeSettings();
+  await loadData();
+  showToast('设置已保存', 'success');
+}
+
+// 点击遮罩关闭
+document.querySelectorAll('.modal-mask').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+});
+
+// 启动
+loadData();
+</script>
+</body>
+</html>
